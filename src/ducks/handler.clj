@@ -5,7 +5,8 @@
             [hiccup.middleware :refer [wrap-base-url]]
             [compojure.handler :as handler]
             [compojure.route :as route]
-            [ducks.routes.home :refer [home-routes]]))
+            [ducks.routes.home :refer [home-routes]]
+            [ducks.routes.about :refer [about-routes]]))
 
 (defn init []
   (println "ducks is starting"))
@@ -18,6 +19,6 @@
   (route/not-found "Not Found"))
 
 (def app
-  (-> (routes home-routes app-routes)
+  (-> (routes about-routes home-routes app-routes)
       (handler/site)
       (wrap-base-url)))

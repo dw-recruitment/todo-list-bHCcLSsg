@@ -7,7 +7,7 @@
   (testing "main route"
     (let [response (app (request :get "/"))]
       (is (= (:status response) 200))
-      (is (.contains (:body response) "Under Construction!"))))
+      (is (.contains (:body response) "Stuff To Do"))))
 
   (testing "not-found route"
     (let [response (app (request :get "/invalid"))]

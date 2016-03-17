@@ -129,6 +129,73 @@ Delayed reaction; doneness ought to be a radio button.
 
 Adding tests took longer than the button.  :(
 
+### Step 9
+
+Migrations.  I was right about those needing more testing and what I
+did do was badly botched.  It's better now but could be less brittle.
+
+The sql for the migrations are now in a directory under models/sql.  I
+was only able to get all of the sql in the same file working by
+giving each statement it's own name.  I would rather wrap all the
+statements in a transaction because straightening out botched
+migrations is no fun.  Yesql complains about nested transactions
+though.  Worth another try sometime.
+
+The nice thing though is I can run the migration through lein or
+manually straight against the db.
+`lein migration -version 2` or
+`sqlite3 db/ducks.db  < src/ducks/models/sql/migrations/up_002.sql`
+(On the list of things to do is setting the version properly when used
+strictly through scripts.)
+
+The database functions ought to have paging.
+
+Google comes through and I found and example of yesql and
+transactions.  It's works through the jdbc side.  Disappointing.
+
+yesql doesn't like hyphens in the symbol names used in queries.  Error
+message is misleading.  Passing in (:todo-list-uuid :todo-uuid)
+says that it was expecting (:todo).  I'm pretty sure now that my
+"transactions" aren't actually working.  And it looks like I can
+delete entries from todos despite todo_list_entries foreign key.  :(
+
+Sqlite won't let you add a datetime non-null column with a default to
+current time.  You can create a table like that but not add a column
+later with an alter.  Neither will it support dropping columns.  In
+"real life", I could do the migrations by creating a temp table with
+the right columns, copying the data in, dropping the original, then
+renaming the temp.  I'm not going to do that here.
+
+#### The Wishlist
+
+If I had more time...
+
+#####  DB Woes
+
+The transactions and foreign-key constraints need fixing.
+
+##### kill todo-list
+
+I went with 'todo-list' because the requirments used the word list.  I
+should have diverged and used something like 'tasks' or 'projects' to
+represent collections of todos.  'todo-list' isn't a list and leads to
+some very ugly names.
+
+And should have taken the 'list-uuid' out of the url.
+
+#### yesql conventions
+
+I like where I was heading but there were missteps.
+
+#### bootstrap
+
+It looks terrible.  A little bit of bootstrap would have gone a long way.
+
+#### more tests, more error handling.
+
+
+
+
 ## License
 
 Copyright © 2016 FIXME

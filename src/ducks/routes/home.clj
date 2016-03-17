@@ -1,74 +1,54 @@
 (ns ducks.routes.home
+  "Namespace for 'home' routes."
   (:require [compojure.core :refer :all]
             [hiccup.page :as page]
             [hiccup.form :as form]
             [hiccup.element :as hiccup-elements]
             [ducks.views.layout :as layout]
-            [ducks.models.todo :refer
-             [fetch-todos save-todo! make-todo todo-update! validate-todo convert-uuid-from-string todo-delete!]]))
+            [ducks.models.todo-list :refer [todo-list-find-all
+                                            make-and-persist-todo-list!
+                                            todo-list-purge!]]
+            [ring.util.anti-forgery :refer [anti-forgery-field]]))
 
 
-(defn next-doneness [doneness]
-  "The next possible doneness state for a given doneness."
-  (if (= doneness  "done")
-    "todo"
-    "done"))
-
-(defn next-doneness-label [doneness]
-  "The label for the next possible doneness state for a given doneness."
-  (if (= doneness "done")
-    "undo"
-    "complete"))
-
-
-(defn enbutton-doneness [uuid doneness text]
-  "Creates a button for changing todo state."
-  (form/form-to
-   [:put "/"]
-   (form/hidden-field "uuid" uuid)
-   (form/hidden-field "doneness" (next-doneness doneness))
-   (form/hidden-field "text" text)
-   (form/submit-button (next-doneness-label doneness))))
-
-(defn delete-button [uuid]
-  "Creates a button for deleting a todo."
+(defn delete-button
+  "Takes a uuid for the todo.  Returns html for button to delete todo."
+  [uuid]
   (form/form-to
    [:delete "/"]
+   (anti-forgery-field)
    (form/hidden-field "uuid" uuid)
    (form/submit-button "delete")))
 
-(defn format-todo [{:keys [text doneness uuid]}]
-  "Returns the html formatting a task"
-  [:li
-   [:div {:class (str "text " doneness)} text]
-   [:div {:class "doneness"} doneness (enbutton-doneness uuid doneness text) (delete-button uuid)]])
+(defn format-todo-list
+  "Takes a todo-list and returns a link to the list-uuid page."
+  [{:keys [description uuid]}]
+  [:li {:class "todo-list"}
+   (hiccup-elements/link-to (str "/list-uuid/" uuid) description)
+   (delete-button uuid)])
 
-
-(defn home [todos]
+(defn home
+  "Takes a seq of todo-lists, generating the page."
+  [todo-lists]
   (layout/common
-   (page/include-css "/css/todo.css")
    [:p
+    [:h2 "New todo list:"]
     (form/form-to
-     [:post "/"]
-     "Text: " (form/text-field "text")
-     "Doneness: " (form/text-field "doneness")
-     (form/submit-button "Submit"))
-    ]
-   [:h2 "Stuff To Do"]
-   [:ul
-    (map format-todo todos)
-    ]
-   ))
+     [:post (str  "/")]
+     "Description: " (form/text-field "description")
+     (anti-forgery-field)
+     (form/submit-button "Submit"))]
+   [:p
+    [:h2 "TODO Lists"
+     [:ul (map format-todo-list todo-lists)]]]))
+
 
 (defroutes home-routes
-  (GET "/" [] (home (fetch-todos)))
-  (DELETE "/" {params :params} (do (todo-delete! (select-keys params [:uuid]))
-                                   (home (fetch-todos))))
-  (PUT "/" {params :params} (let [todo (select-keys params [:uuid :text :doneness])]
-                              (validate-todo (convert-uuid-from-string todo))
-                              (todo-update! todo)
-                              (home (fetch-todos))))
-  (POST "/" {params :params} (do (save-todo! (validate-todo
-                                              (make-todo (:text params)
-                                                         (:doneness params))))
-                                 (home (fetch-todos)))))
+  "Routes for the home (/) page.  Supports GET, DELETE, and POST."
+  (GET "/" [] (home (todo-list-find-all)))
+  (DELETE "/" {params :params}
+          (do (todo-list-purge! (select-keys params [:uuid]))
+              (home (todo-list-find-all))))
+  (POST "/" {params :params}
+        (do (make-and-persist-todo-list! (:description params))
+            (home (todo-list-find-all)))))

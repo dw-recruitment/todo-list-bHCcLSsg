@@ -5,6 +5,7 @@
                  [compojure "1.5.0"]
                  [hiccup "1.0.5"]
                  [ring-server "0.4.0"]
+                 [ring/ring-defaults "0.2.0"]
                  [drift "1.5.3"]
                  [yesql "0.5.2"]
                  [org.xerial/sqlite-jdbc "3.7.2"]]

@@ -13,11 +13,18 @@
 
 (deftest test-todo-validity
   (testing "invalid state"
-    (is (thrown? AssertionError  (validate-todo (make-todo "testA" "badstate")))))
+    (is (thrown? AssertionError (validate-todo
+                                  (make-todo "testA" "badstate")))))
   (testing "nil uuid"
-    (is (thrown? AssertionError  (validate-todo {:text "testB" :doneness "done" :uuid nil}))))
+    (is (thrown? AssertionError (validate-todo
+                                 {:text "testB"
+                                  :doneness "done"
+                                  :uuid nil}))))
   (testing "not a uuid"
-    (is (thrown? AssertionError  (validate-todo {:text "testC" :doneness "todo" :uuid 42}))))
+    (is (thrown? AssertionError (validate-todo
+                                 {:text "testC"
+                                  :doneness "todo"
+                                  :uuid 42}))))
   (testing "just the text"
     (let [t (make-todo "some text")]
       (assert (= "some text" (:text t)))
@@ -29,5 +36,3 @@
     (let [t (make-todo "testD")
           result (convert-uuid-from-string (convert-uuid-to-string t))]
       (assert (= t result)))))
-
-

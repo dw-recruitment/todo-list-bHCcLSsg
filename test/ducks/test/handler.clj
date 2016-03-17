@@ -1,11 +1,18 @@
 (ns ducks.test.handler
+  (:require [ring.middleware.params :refer [wrap-params]]
+            [ring.middleware.keyword-params :refer [wrap-keyword-params]]
+            [compojure.core :refer [routes]]
+            [compojure.route :as route]
+            [ducks.routes.todo-list :refer [todo-list-routes]]
+            [ducks.routes.about :refer [about-routes]])
   (:use clojure.test
         ring.mock.request
         ducks.handler))
 
 (deftest test-app
   (testing "main route"
-    (let [response (app (request :get "/"))]
+    (let [req (request :get "/list-uuid/UUID")
+          response (app req)]
       (is (= (:status response) 200))
       (is (.contains (:body response) "Stuff To Do"))))
 
@@ -16,27 +23,59 @@
   (testing "about route"
     (let [response (app (request :get "/about"))]
       (is (= (:status response) 200))
-      (is (.contains (:body response) "About Ducks!"))))
+      (is (.contains (:body response) "About Ducks!")))))
 
 
-  ;; Posting is inherently side-effecting but it would be neat testing this without
-  ;; with-redefs or atoms
+;; constructing the app out of custom routes, excluding anti-forgery
+(deftest test-dodo-post
   (testing "testing that posting a todo to / calls database functions"
     (let [save-todo-called (atom [])
-          fetch-todos-called (atom [])]
-      (with-redefs [ducks.models.todo/save-todo! (fn [arg] (swap! save-todo-called conj arg))
-                    ducks.models.todo/fetch-todos (fn [] (swap! fetch-todos-called conj true) [])]
-        (let [response (app (request :post "/" {:text "prose" :doneness "todo"}))
-              {:keys [text doneness]} (first @save-todo-called)]
+          fetch-todos-by-todo-list-uuid-called (atom [])]
+      (with-redefs [ducks.models.todo/save-todo!
+                    (fn [todo uuid] (swap! save-todo-called conj [todo uuid]))
+                    ducks.models.todo/fetch-todos-by-todo-list-uuid
+                    (fn [uuid] (swap!
+                                fetch-todos-by-todo-list-uuid-called
+                                conj
+                                uuid)
+                      [])]
+        (let [;; constructing the request
+              req
+              (request :post
+                       "/list-uuid/UUID"
+                       {:text "prose"
+                        :doneness "todo"})
+
+              ;; building custom app, excluding anti-forgery
+              custom-app
+              (-> (routes about-routes todo-list-routes app-routes)
+                  (wrap-keyword-params)
+                  (wrap-params))
+
+              ;; calling app on request to get response
+              response (custom-app req)
+
+              ;; deconstructing the arguments passed to save-todo!
+              [{:keys [text doneness]} uuid]
+              (first @save-todo-called)]
+
           (is (= (:status response) 200))
           (is (= text "prose"))
           (is (= doneness "todo"))
-          (is (first @fetch-todos-called))))))
+          (is (first @fetch-todos-by-todo-list-uuid-called)))))))
 
+
+;; constructing the app out of custom routes, excluding anti-forgery
+(deftest test-todo-delete
   (testing "testing that posting a todo to / calls database functions"
     (let [todo-delete-called (atom [])]
-      (with-redefs [ducks.models.todo/todo-delete! (fn [arg] (swap! todo-delete-called conj arg))]
-        (let [response (app (request :delete "/" {:uuid "uuid"}))]
+      (with-redefs [ducks.models.todo/todo-delete!
+                    (fn [arg] (swap! todo-delete-called conj arg))]
+        (let [custom-app
+              (-> (routes about-routes todo-list-routes app-routes)
+                  (wrap-keyword-params)
+                  (wrap-params))
+              req  (request :delete "/list-uuid/UUID" {:uuid "uuid"})
+              response (custom-app req)]
           (is (= (:status response) 200))
           (is (= {:uuid  "uuid"}  (first @todo-delete-called))))))))
-

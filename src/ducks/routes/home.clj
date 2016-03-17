@@ -4,10 +4,41 @@
             [hiccup.form :as form]
             [hiccup.element :as hiccup-elements]
             [ducks.views.layout :as layout]
-            [ducks.models.todo :refer [fetch-todos save-todo! make-todo]]))
+            [ducks.models.todo :refer [fetch-todos save-todo! make-todo todo-update! validate-todo convert-uuid-from-string]]))
+
+
+(defn next-doneness [doneness]
+  "The next possible doneness state for a given doneness."
+  (if (= doneness  "done")
+    "todo"
+    "done"))
+
+(defn next-doneness-label [doneness]
+  "The label for the next possible doneness state for a given doneness."
+  (if (= doneness "done")
+    "undo"
+    "complete"))
+
+
+(defn enbutton-doneness [uuid doneness text]
+  "Creates a button for changing task state."
+  (form/form-to
+   [:put "/"]
+   (form/hidden-field "uuid" uuid)
+   (form/hidden-field "doneness" (next-doneness doneness))
+   (form/hidden-field "text" text)
+   (form/submit-button (next-doneness-label doneness))))
+
+(defn format-todo [{:keys [text doneness uuid]}]
+  "Returns the html formatting a task"
+  [:li
+   [:div {:class (str "text " doneness)} text]
+   [:div {:class "doneness"} doneness (enbutton-doneness uuid doneness text)]])
+
 
 (defn home [todos]
   (layout/common
+   (page/include-css "/css/todo.css")
    [:p
     (form/form-to
      [:post "/"]
@@ -17,16 +48,17 @@
     ]
    [:h2 "Stuff To Do"]
    [:ul
-    (map (fn [{:keys [text doneness]}]
-           [:li
-            [:div {:class "text"} text]
-            [:div {:class "doneness"} doneness]])
-         todos)
+    (map format-todo todos)
     ]
    ))
 
 (defroutes home-routes
   (GET "/" [] (home (fetch-todos)))
-  (POST "/" {params :params} (do (save-todo! (make-todo (:text params)
-                                                        (:doneness params)))
+  (PUT "/" {params :params} (let [todo (select-keys params [:uuid :text :doneness])]
+                              (validate-todo (convert-uuid-from-string todo))
+                              (todo-update! todo)
+                              (home (fetch-todos))))
+  (POST "/" {params :params} (do (save-todo! (validate-todo
+                                              (make-todo (:text params)
+                                                         (:doneness params))))
                                  (home (fetch-todos)))))

@@ -42,4 +42,9 @@
   (map convert-uuid-from-string (retrieve-todos)))
 
 
+(defquery todo-update-sql! "ducks/models/sql/todo_update_sql.sql" {:connection db})
+
+(defn todo-update! [todo]
+  (todo-update-sql! todo))
+
   

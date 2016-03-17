@@ -30,5 +30,6 @@
               {:keys [text doneness]} (first @save-todo-called)]
           (is (= (:status response) 200))
           (is (= text "prose"))
-          (is (= doneness "todo")))))))
+          (is (= doneness "todo"))
+          (is (first @fetch-todos-called)))))))
 

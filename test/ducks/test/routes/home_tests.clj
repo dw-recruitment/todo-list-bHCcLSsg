@@ -34,6 +34,11 @@
           result (enbutton-doneness "uuid" "todo" "prose")]
       (is (= expected result)))))
 
-
+(deftest test-delete-button
+  (testing "make a button"
+    (let [uri (java.net.URI. "/")
+          expected [:form {:method "POST", :action uri} [:input {:type "hidden", :name "_method", :id "_method", :value "DELETE"}] [:input {:type "hidden", :name "uuid", :id "uuid", :value "uuid"}] [:input {:type "submit", :value "delete"}]]
+          result (delete-button "uuid")]
+      (is (= expected result)))))
 
 

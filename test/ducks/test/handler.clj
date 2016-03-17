@@ -31,5 +31,12 @@
           (is (= (:status response) 200))
           (is (= text "prose"))
           (is (= doneness "todo"))
-          (is (first @fetch-todos-called)))))))
+          (is (first @fetch-todos-called))))))
+
+  (testing "testing that posting a todo to / calls database functions"
+    (let [todo-delete-called (atom [])]
+      (with-redefs [ducks.models.todo/todo-delete! (fn [arg] (swap! todo-delete-called conj arg))]
+        (let [response (app (request :delete "/" {:uuid "uuid"}))]
+          (is (= (:status response) 200))
+          (is (= {:uuid  "uuid"}  (first @todo-delete-called))))))))
 

@@ -123,7 +123,11 @@ feeling.
 
 The factoring is starting to pile up.
 
+### Step 8
 
+Delayed reaction; doneness ought to be a radio button.
+
+Adding tests took longer than the button.  :(
 
 ## License
 

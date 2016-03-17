@@ -4,7 +4,8 @@
             [hiccup.form :as form]
             [hiccup.element :as hiccup-elements]
             [ducks.views.layout :as layout]
-            [ducks.models.todo :refer [fetch-todos save-todo! make-todo todo-update! validate-todo convert-uuid-from-string]]))
+            [ducks.models.todo :refer
+             [fetch-todos save-todo! make-todo todo-update! validate-todo convert-uuid-from-string todo-delete!]]))
 
 
 (defn next-doneness [doneness]
@@ -21,7 +22,7 @@
 
 
 (defn enbutton-doneness [uuid doneness text]
-  "Creates a button for changing task state."
+  "Creates a button for changing todo state."
   (form/form-to
    [:put "/"]
    (form/hidden-field "uuid" uuid)
@@ -29,11 +30,18 @@
    (form/hidden-field "text" text)
    (form/submit-button (next-doneness-label doneness))))
 
+(defn delete-button [uuid]
+  "Creates a button for deleting a todo."
+  (form/form-to
+   [:delete "/"]
+   (form/hidden-field "uuid" uuid)
+   (form/submit-button "delete")))
+
 (defn format-todo [{:keys [text doneness uuid]}]
   "Returns the html formatting a task"
   [:li
    [:div {:class (str "text " doneness)} text]
-   [:div {:class "doneness"} doneness (enbutton-doneness uuid doneness text)]])
+   [:div {:class "doneness"} doneness (enbutton-doneness uuid doneness text) (delete-button uuid)]])
 
 
 (defn home [todos]
@@ -54,6 +62,8 @@
 
 (defroutes home-routes
   (GET "/" [] (home (fetch-todos)))
+  (DELETE "/" {params :params} (do (todo-delete! (select-keys params [:uuid]))
+                                   (home (fetch-todos))))
   (PUT "/" {params :params} (let [todo (select-keys params [:uuid :text :doneness])]
                               (validate-todo (convert-uuid-from-string todo))
                               (todo-update! todo)

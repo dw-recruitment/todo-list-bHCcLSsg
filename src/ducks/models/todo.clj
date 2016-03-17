@@ -47,4 +47,9 @@
 (defn todo-update! [todo]
   (todo-update-sql! todo))
 
-  
+(defquery todo-delete-sql! "ducks/models/sql/todo_delete_sql.sql" {:connection db})
+
+(defn todo-delete! [todo]
+  (todo-delete-sql! todo))
+
+

@@ -89,6 +89,14 @@ probably a better way.
 
 Added dummy data using repl.
 
+### Step 6
+
+The error handling is crude.  Entering an invalid doneness state fails
+an assert before getting into the db but the stack trace way more
+spectacular than it needs to be.
+
+I'm still unhappy about the amount of hiccup in routes.home.  That
+probably ought to live in the views.
 
 
 ## License

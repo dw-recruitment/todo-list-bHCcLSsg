@@ -8,6 +8,7 @@
             [ducks.models.todo-list :refer [todo-list-find-all
                                             make-and-persist-todo-list!
                                             todo-list-purge!]]
+            [ducks.services.rabbit :refer [tell-rabbit!]]
             [ring.util.anti-forgery :refer [anti-forgery-field]]))
 
 
@@ -48,7 +49,14 @@
   (GET "/" [] (home (todo-list-find-all)))
   (DELETE "/" {params :params}
           (do (todo-list-purge! (select-keys params [:uuid]))
+              (tell-rabbit! {:action :delete
+                             :type :todo-list
+                             :uuid (:uuid params)})
               (home (todo-list-find-all))))
   (POST "/" {params :params}
-        (do (make-and-persist-todo-list! (:description params))
+        (let [todo-list  (make-and-persist-todo-list! (:description params))]
+            (tell-rabbit! {:action :post
+                           :type :todo-list
+                           :uuid (:uuid todo-list)
+                           :description (:description params)})
             (home (todo-list-find-all)))))

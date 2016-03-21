@@ -9,18 +9,22 @@
             [ducks.routes.todo-list :refer [todo-list-routes]]
             [ducks.routes.about :refer [about-routes]]
             [ducks.routes.home :refer [home-routes]]
+            [ducks.services.rabbit :refer [start-rabbit-services
+                                           stop-rabbit-services]]
             [ring.middleware.anti-forgery :refer [wrap-anti-forgery]]
             [ring.middleware.defaults :refer [wrap-defaults site-defaults]]))
 
 (defn init
   "Initializes the app."
   []
-  (println "ducks is starting"))
+  (println "ducks is starting")
+  (start-rabbit-services))
 
 (defn destroy
   "Shuts down the app."
   []
-  (println "ducks is shutting down"))
+  (println "ducks is shutting down")
+  (stop-rabbit-services))
 
 (defroutes app-routes
   "Defines routes for resources and not-found."

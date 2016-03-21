@@ -30,9 +30,14 @@
 (deftest test-dodo-post
   (testing "testing that posting a todo to / calls database functions"
     (let [save-todo-called (atom [])
-          fetch-todos-by-todo-list-uuid-called (atom [])]
-      (with-redefs [ducks.models.todo/save-todo!
-                    (fn [todo uuid] (swap! save-todo-called conj [todo uuid]))
+          fetch-todos-by-todo-list-uuid-called (atom [])
+          rabbit-told (atom {})]
+      (with-redefs [ducks.services.rabbit/tell-rabbit!
+                    (fn [msg] (compare-and-set! rabbit-told {} msg))
+                    ducks.models.todo/save-todo!
+                    (fn [todo uuid]
+                      (swap! save-todo-called conj [todo uuid])
+                      todo)
                     ducks.models.todo/fetch-todos-by-todo-list-uuid
                     (fn [uuid] (swap!
                                 fetch-todos-by-todo-list-uuid-called
@@ -62,14 +67,19 @@
           (is (= (:status response) 200))
           (is (= text "prose"))
           (is (= doneness "todo"))
-          (is (first @fetch-todos-by-todo-list-uuid-called)))))))
+          (is (first @fetch-todos-by-todo-list-uuid-called))
+          (is (= (:action @rabbit-told) :post))
+          (is (= (:type @rabbit-told) :todo)))))))
 
 
 ;; constructing the app out of custom routes, excluding anti-forgery
 (deftest test-todo-delete
   (testing "testing that posting a todo to / calls database functions"
-    (let [todo-delete-called (atom [])]
-      (with-redefs [ducks.models.todo/todo-delete!
+    (let [todo-delete-called (atom [])
+          rabbit-told (atom {})]
+      (with-redefs [ducks.services.rabbit/tell-rabbit!
+                    (fn [msg] (compare-and-set! rabbit-told {} msg))
+                    ducks.models.todo/todo-delete!
                     (fn [arg] (swap! todo-delete-called conj arg))]
         (let [custom-app
               (-> (routes about-routes todo-list-routes app-routes)
@@ -78,4 +88,6 @@
               req  (request :delete "/list-uuid/UUID" {:uuid "uuid"})
               response (custom-app req)]
           (is (= (:status response) 200))
+          (is (= (:action @rabbit-told) :delete))
+          (is (= (:type @rabbit-told) :todo))
           (is (= {:uuid  "uuid"}  (first @todo-delete-called))))))))

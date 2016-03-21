@@ -8,6 +8,8 @@
                  [ring/ring-defaults "0.2.0"]
                  [drift "1.5.3"]
                  [yesql "0.5.2"]
+                 [com.novemberain/langohr "3.5.0"]
+                 [org.clojure/core.async "0.2.374"]
                  [org.xerial/sqlite-jdbc "3.7.2"]]
   :plugins [[lein-ring "0.9.7"]
             [drift "1.5.3"]]

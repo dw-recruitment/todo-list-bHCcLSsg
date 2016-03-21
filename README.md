@@ -194,6 +194,29 @@ It looks terrible.  A little bit of bootstrap would have gone a long way.
 #### more tests, more error handling.
 
 
+### Step 10
+
+For step 10, I decided to give core.async and rabbitmq a spin.  I set
+up a core.async channel.  The handlers put messages in the channel
+which are picked up and sent over rabbitmq.  I've never used either.
+The rabbitmq code was "heavily inspired" (ie. copied) from the langohr
+docks. I copied the langohr sample into another clojure app "loros"
+that subscribes to the channel and prints out whatever ducks put into
+rabbitmq.
+
+I'm having the handlers invoke the rabbit service directly.  Another
+option would be to move that into the domain.  I went with the handler
+because this feels like the handler is supposed to be mediating
+between views and domain, this is just another interested party.  It
+doesn't feel like domain logic in the same sense that working with the
+database.
+
+On the list of things to do; create a config.rabbitmq namespace
+instead of using the rabbitmq defaults.  And more error handling.  And
+more testing.
+
+I was happier that core.async and rabbitmq came together much faster
+than fighting anti-forgery though.
 
 
 ## License

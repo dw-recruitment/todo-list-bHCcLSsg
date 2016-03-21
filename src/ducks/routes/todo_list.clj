@@ -6,6 +6,7 @@
             [hiccup.element :as hiccup-elements]
             [ducks.views.layout :as layout]
             [ring.util.anti-forgery :refer [anti-forgery-field]]
+            [ducks.services.rabbit :refer [tell-rabbit!]]
             [ducks.models.todo-list :refer [todo-list-find-by-uuid]]
             [ducks.models.todo :refer [convert-uuid-from-string
                                        make-todo
@@ -101,6 +102,9 @@ and generates the page html."
   (DELETE "/list-uuid/:todo-list-uuid" {params :params}
           (do (todo-delete!
                (select-keys params [:uuid]))
+              (tell-rabbit! {:action :delete
+                             :type :todo
+                             :uuid (:uuid params)})
               (todo-list (fetch-todos params)
                          (:todo-list-uuid params)
                          (fetch-list-description params))))
@@ -110,15 +114,21 @@ and generates the page html."
              (select-keys params [:uuid :text :doneness])]
          (validate-todo (convert-uuid-from-string todo))
          (todo-update! todo)
+         (tell-rabbit! (merge {:action :update
+                               :type :todo}
+                              todo))
          (todo-list (fetch-todos params)
                     (:todo-list-uuid params)
                     (fetch-list-description params))))
 
   (POST "/list-uuid/:todo-list-uuid" {params :params}
-        (do (save-todo! (validate-todo
-                         (make-todo (:text params)
-                                    (:doneness params)))
-                        (:todo-list-uuid params))
-            (todo-list (fetch-todos params)
-                       (:todo-list-uuid params)
-                       (fetch-list-description params)))))
+        (let [todo  (save-todo! (validate-todo
+                                 (make-todo (:text params)
+                                            (:doneness params)))
+                                (:todo-list-uuid params))]
+          (tell-rabbit! (merge {:action :post
+                                :type :todo}
+                               todo))
+          (todo-list (fetch-todos params)
+                     (:todo-list-uuid params)
+                     (fetch-list-description params)))))

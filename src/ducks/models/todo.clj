@@ -75,7 +75,8 @@
         validate-todo
         convert-uuid-to-string
         todo-create-sql!)
-    (todo-list-entry-create! todo todo-list-uuid)))
+    (todo-list-entry-create! todo todo-list-uuid)
+  todo))
 
 
 (defn fetch-todos
